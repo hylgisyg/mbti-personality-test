@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MBTI 性格测评 · 工作/生活双场景</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body {
+  font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background:#F5F8FB; color:#2D3748; line-height:1.65; font-size:15px;
+  -webkit-font-smoothing:antialiased;
+}
+#app { max-width:760px; margin:0 auto; padding:24px 16px 60px; }
+.screen { display:none; }
+.screen.active { display:block; animation:fadeIn .35s ease; }
+@keyframes fadeIn { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+
+/* ===== 顶部品牌 ===== */
+.app-brand { display:flex; align-items:baseline; gap:10px; margin-bottom:18px; padding:0 2px; }
+.app-brand h1 { font-size:19px; font-weight:700; color:#2C6AA0; letter-spacing:.5px; }
+.app-brand .sub { font-size:12.5px; color:#8A98A9; }
+
+/* ===== 卡片 ===== */
+.card { background:#fff; border:1px solid #E2E8F0; border-radius:14px;
+  box-shadow:0 1px 3px rgba(45,55,72,.05), 0 6px 18px rgba(45,55,72,.04);
+  padding:24px; margin-bottom:16px; }
+
+/* ===== 按钮 ===== */
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  border:none; border-radius:10px; font-size:15px; font-weight:600; font-family:inherit;
+  cursor:pointer; padding:12px 26px; transition:all .18s; min-height:46px; }
+.btn-primary { background:#3B82C4; color:#fff; }
+.btn-primary:hover { background:#2C6AA0; }
+.btn-ghost { background:#fff; color:#3B82C4; border:1.5px solid #BFD8EC; }
+.btn-ghost:hover { background:#EAF3FB; }
+.btn-gray { background:#fff; color:#8A98A9; border:1.5px solid #E2E8F0; }
+.btn-gray:hover { color:#D9534F; border-color:#F0C4C2; }
+.btn-block { width:100%; }
+.btn[disabled] { opacity:.4; cursor:not-allowed; }
+.btn-row { display:flex; gap:10px; flex-wrap:wrap; }
+.btn-row .btn { flex:1; min-width:140px; }
+
+/* ===== 欢迎页 ===== */
+.hero-tag { display:inline-block; font-size:12px; font-weight:600; color:#2C6AA0;
+  background:#EAF3FB; border-radius:999px; padding:3px 12px; margin-bottom:12px; letter-spacing:1px; }
+.hero-title { font-size:26px; font-weight:800; margin-bottom:8px; color:#1F2937; line-height:1.3; }
+.hero-desc { color:#5B6B7C; font-size:14.5px; margin-bottom:18px; }
+.meta-chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+.meta-chip { font-size:12.5px; color:#4A6FA5; background:#EFF6FC; border:1px solid #D8E8F5;
+  border-radius:999px; padding:4px 12px; }
+.dim-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:10px; margin-bottom:20px; }
+.dim-cell { background:#FAFCFE; border:1px solid #E4EDF5; border-radius:10px; padding:10px 12px; }
+.dim-cell b { color:#2C6AA0; font-size:13.5px; display:block; }
+.dim-cell span { display:block; font-size:12px; color:#8A98A9; line-height:1.5; margin-top:2px; }
+.notice-list { font-size:13px; color:#718096; margin:0 0 22px 18px; }
+.notice-list li { margin:4px 0; }
+.resume-box { background:#F0F7FD; border:1px dashed #BFD8EC; border-radius:10px;
+  padding:14px 16px; margin-bottom:18px; font-size:14px; color:#3E5F80; }
+.result-mini { display:flex; align-items:center; gap:14px; background:#F0F7FD;
+  border:1px solid #D8E8F5; border-radius:10px; padding:14px 16px; margin-bottom:18px; }
+.result-mini .rm-code { font-size:26px; font-weight:800; letter-spacing:3px; color:#2C6AA0; }
+.result-mini .rm-info { flex:1; }
+.result-mini .rm-name { font-size:14px; font-weight:700; color:#3A4A5C; }
+.result-mini .rm-date { font-size:12px; color:#8A98A9; margin-top:2px; }
+
+/* ===== 答题页 ===== */
+.quiz-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; padding:0 2px; }
+.quiz-step { font-size:13px; color:#8A98A9; font-weight:600; }
+.quiz-step b { color:#2C6AA0; font-size:15px; }
+.quiz-exit { font-size:12.5px; color:#8A98A9; cursor:pointer; text-decoration:none; }
+.quiz-exit:hover { color:#3B82C4; }
+.progress-track { height:6px; background:#E4EDF5; border-radius:999px; overflow:hidden; margin-bottom:18px; }
+.progress-fill { height:100%; background:linear-gradient(90deg,#5FA3DD,#2C6AA0); border-radius:999px; transition:width .4s ease; }
+
+.q-text { font-size:17px; font-weight:700; color:#1F2937; margin-bottom:6px; line-height:1.55; }
+.q-hint { font-size:12.5px; color:#8A98A9; margin-bottom:14px; }
+
+.scene-block { border:1px solid #E2E8F0; border-radius:12px; padding:15px; margin-bottom:12px; background:#FDFEFF; }
+.scene-head { display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:700; margin-bottom:11px; flex-wrap:wrap; }
+.scene-dot { width:10px; height:10px; border-radius:50%; display:inline-block; flex:0 0 auto; }
+.scene-dot.work { background:#3B82C4; }
+.scene-dot.life { background:#E8913A; }
+.scene-dot.gen  { background:#8A98A9; }
+.scene-head .scene-note { font-weight:400; font-size:12px; color:#A0AEC0; }
+
+.stmt { font-size:14px; color:#3A4A5C; padding:9px 12px; border-radius:8px; background:#F4F8FC; margin:0; line-height:1.55; }
+.stmt b { color:#2C6AA0; margin-right:6px; font-size:12.5px; }
+.stmt.stmt-b { margin-top:4px; }
+
+.scale-row { display:flex; gap:6px; margin:10px 0; }
+.scale-btn { flex:1; background:#fff; border:1.5px solid #D9E4EF; border-radius:10px;
+  padding:8px 2px 7px; cursor:pointer; font-family:inherit; transition:all .15s;
+  display:flex; flex-direction:column; align-items:center; gap:2px; min-height:52px; }
+.scale-btn .sym { font-size:14px; color:#8FA8C2; line-height:1; }
+.scale-btn .lbl { font-size:10.5px; color:#A0AEC0; line-height:1.3; }
+.scale-btn:hover { border-color:#8FB8DE; background:#F7FBFE; }
+.scale-btn.selected { background:#3B82C4; border-color:#3B82C4;
+  box-shadow:0 3px 10px rgba(59,130,196,.35); transform:translateY(-1px); }
+.scale-btn.selected .sym { color:#fff; }
+.scale-btn.selected .lbl { color:rgba(255,255,255,.92); }
+.scene-block.scene-life .scale-btn.selected { background:#E8913A; border-color:#E8913A;
+  box-shadow:0 3px 10px rgba(232,145,58,.35); }
+
+.nav-row { display:flex; gap:10px; margin-top:16px; }
+.nav-row .btn { flex:1; }
+
+/* ===== 报告页 ===== */
+.type-hero { text-align:center; padding:30px 24px 26px; }
+.type-code { font-size:44px; font-weight:800; letter-spacing:6px; color:#2C6AA0; line-height:1.1; }
+.type-name { font-size:17px; font-weight:700; color:#3A4A5C; margin-top:6px; }
+.type-desc { font-size:14px; color:#718096; margin:8px auto 0; max-width:520px; }
+.type-meta { font-size:12px; color:#A0AEC0; margin-top:14px; }
+
+.section-title { display:flex; align-items:center; gap:8px; font-size:16px; font-weight:700;
+  color:#1F2937; margin:26px 2px 12px; }
+.section-title::before { content:''; width:4px; height:16px; background:#3B82C4; border-radius:2px; }
+
+.insight-card { background:linear-gradient(135deg,#F0F7FD 0%,#FDF6EE 100%);
+  border:1px solid #E4EDF5; border-radius:14px; padding:20px; }
+.insight-kicker { font-size:12px; font-weight:700; color:#8A98A9; letter-spacing:2px; margin-bottom:8px; }
+.insight-title { font-size:15.5px; font-weight:800; color:#1F2937; margin-bottom:8px; }
+.insight-text { font-size:14px; color:#4A5A6C; line-height:1.7; }
+.insight-chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; }
+.chip { font-size:11.5px; font-weight:600; border-radius:999px; padding:3px 10px; white-space:nowrap; }
+.chip-flip    { background:#F3E8FD; color:#7C3AAD; border:1px solid #E2D2F5; }
+.chip-strong  { background:#EAF3FB; color:#2C6AA0; border:1px solid #CFE3F3; }
+.chip-mild    { background:#F1F5F9; color:#64748B; border:1px solid #E2E8F0; }
+.chip-stable  { background:#EDF7F2; color:#2F7A57; border:1px solid #D5EAE0; }
+
+.dim-block { margin-bottom:18px; }
+.dim-block:last-child { margin-bottom:0; }
+.dim-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; gap:8px; flex-wrap:wrap; }
+.dim-name { font-size:14.5px; font-weight:700; color:#2D3748; }
+.dim-name .letters { color:#8A98A9; font-weight:600; font-size:13px; }
+.dim-pct { font-size:13px; font-weight:700; color:#2C6AA0; font-variant-numeric:tabular-nums; }
+.bar-track { position:relative; height:22px; background:#EDF2F7; border-radius:999px; overflow:hidden; }
+.bar-fill { position:absolute; left:0; top:0; bottom:0; border-radius:999px; width:0;
+  transition:width .9s cubic-bezier(.22,.61,.36,1); }
+.bar-fill.overall { background:linear-gradient(90deg,#7C93AB,#5D7489); }
+.bar-fill.work { background:linear-gradient(90deg,#5FA3DD,#2C6AA0); }
+.bar-fill.life { background:linear-gradient(90deg,#F0AE6B,#DE8430); }
+.bar-mid { position:absolute; left:50%; top:0; bottom:0; width:2px; background:rgba(45,55,72,.18); }
+.dim-desc { font-size:12.5px; color:#8A98A9; margin-top:6px; line-height:1.55; }
+
+.legend { display:flex; gap:14px; font-size:12px; color:#8A98A9; margin:0 2px 12px; flex-wrap:wrap; }
+.legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+
+.cmp-card { border:1px solid #E2E8F0; border-radius:12px; background:#fff;
+  padding:16px 16px 14px; margin-bottom:12px; }
+.cmp-card.hl-flip { border-color:#D8C4EE; background:#FDFAFE; }
+.cmp-title { font-size:14.5px; font-weight:700; margin-bottom:10px; color:#2D3748; }
+.cmp-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.cmp-label { flex:0 0 46px; font-size:12.5px; font-weight:700; color:#5B6B7C;
+  display:flex; align-items:center; gap:5px; }
+.cmp-bar { flex:1; position:relative; height:20px; background:#EDF2F7; border-radius:999px; overflow:hidden; }
+.cmp-val { flex:0 0 96px; text-align:right; font-size:12px; font-weight:700;
+  color:#5B6B7C; font-variant-numeric:tabular-nums; }
+.cmp-foot { display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.cmp-diff { font-size:12px; color:#8A98A9; }
+.cmp-insight { font-size:13px; color:#4A5A6C; background:#F7FAFD;
+  border-left:3px solid #BFD8EC; padding:9px 12px; border-radius:0 8px 8px 0; margin-top:10px; line-height:1.6; }
+.cmp-card.hl-flip .cmp-insight { border-left-color:#C79BE8; background:#FBF7FD; }
+
+.disclaimer { font-size:12px; color:#A0AEC0; line-height:1.7; text-align:center; margin-top:20px; padding:0 10px; }
+
+/* ===== 响应式 ===== */
+@media (max-width:640px) {
+  #app { padding:14px 10px 48px; }
+  .card { padding:18px 14px; border-radius:12px; }
+  .app-brand h1 { font-size:17px; }
+  .hero-title { font-size:22px; }
+  .type-code { font-size:36px; letter-spacing:4px; }
+  .q-text { font-size:16px; }
+  .scene-block { padding:12px; }
+  .scale-row { gap:4px; }
+  .scale-btn { min-height:50px; padding:6px 1px 5px; }
+  .scale-btn .lbl { font-size:9.5px; }
+  .stmt { font-size:13.5px; padding:8px 10px; }
+  .cmp-val { flex-basis:80px; font-size:11px; }
+  .cmp-label { flex-basis:38px; font-size:11.5px; }
+  .btn { padding:11px 18px; font-size:14.5px; }
+  .btn-row .btn { min-width:110px; }
+  .insight-card { padding:16px; }
+}
+@media print {
+  .no-print { display:none; }
+  body { background:#fff; }
+  .card, .cmp-card { box-shadow:none; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="app-brand no-print">
+    <h1>MBTI 性格测评</h1><span class="sub">工作 / 生活双场景对照版</span>
+  </div>
+  <section id="screen-welcome" class="screen"></section>
+  <section id="screen-quiz" class="screen"></section>
+  <section id="screen-report" class="screen"></section>
+</div>
+<script>
+'use strict';
+/* ============ 常量与题库 ============ */
+const STORE_KEY = 'mbti_dual_v1';
+const DIM_ORDER = ['EI','SN','TF','JP'];
+const DIM_DEFS = {
+  EI: { a:'E', b:'I', aName:'外向', bName:'内向' },
+  SN: { a:'S', b:'N', aName:'实感', bName:'直觉' },
+  TF: { a:'T', b:'F', aName:'思考', bName:'情感' },
+  JP: { a:'J', b:'P', aName:'判断', bName:'知觉' },
+};
+/* 每维度 7 题（a 陈述对应第一字母 E/S/T/J，b 对应第二字母 I/N/F/P）
+   维度内顺序：双、双、单、双、双、单、单，跨维度轮转交错呈现 */
+const BY_DIM = {
+EI: [
+  { dual:true, text:'一场漫长的团队会议（或朋友聚会）结束后，你更接近哪种状态？',
+    a:'意犹未尽，还想找人继续聊', b:'电量耗尽，只想安静待一会儿' },
+  { dual:true, text:'遇到棘手问题时，你的第一反应是？',
+    a:'先找人聊聊，边说边理清思路', b:'先自己琢磨，想清楚了再开口' },
+  { dual:false, text:'周末连着两天都有社交安排，你会？',
+    a:'觉得充实，挺期待', b:'想找理由推掉一两个' },
+  { dual:true, text:'冒出一个新想法时，你倾向于？',
+    a:'马上说出来，在讨论中完善', b:'先在心里酝酿，有把握再讲' },
+  { dual:true, text:'你需要向他人澄清一件复杂的事，你更愿意？',
+    a:'当面聊或打电话，当场对齐', b:'先写成文字，想好再发' },
+  { dual:false, text:'手机来电响起（显示是同事或朋友），你会？',
+    a:'顺手接起来聊', b:'等它响完，再决定怎么回' },
+  { dual:false, text:'独自度过一整天、无人打扰，你的感受是？',
+    a:'有点闷，想找人说话', b:'平静，甚至很享受' },
+],
+SN: [
+  { dual:true, text:'启动一个新项目（或计划一次旅行）时，你更关注？',
+    a:'具体怎么落地：细节、步骤、预算', b:'整体愿景：这件事的意义和可能性' },
+  { dual:true, text:'听别人汇报工作（或听朋友讲经历）时，你更留意？',
+    a:'对方陈述的事实与数据', b:'言外之意和背后的含义' },
+  { dual:false, text:'你更欣赏哪种同事或朋友？',
+    a:'务实靠谱、说到做到', b:'脑洞大、总有新点子' },
+  { dual:true, text:'面对已经熟练的日常事务，你的态度是？',
+    a:'踏实，把熟练的事做精', b:'想改良创新，重复让我发闷' },
+  { dual:true, text:'学习一项对你重要新事物时，你倾向于？',
+    a:'按教程和路线一步步来', b:'先上手玩起来，自己摸索规律' },
+  { dual:false, text:'哪句话更能打动你？',
+    a:'把每件事踏踏实实做成', b:'用想象力改变游戏规则' },
+  { dual:false, text:'回想你做过的决定，更多依据？',
+    a:'以往验证过的经验', b:'对未来的预感和想象' },
+],
+TF: [
+  { dual:true, text:'做重要决策（如选 offer、大额消费）时，你更依赖？',
+    a:'利弊清单和数据分析', b:'内心的感受和价值判断' },
+  { dual:true, text:'看到同事或朋友因失误被批评，你的第一反应？',
+    a:'就事论事，错了就该指出来', b:'替 TA 难受，担心 TA 的状态' },
+  { dual:false, text:'有人向你倾诉烦恼时，你更倾向于？',
+    a:'帮 TA 分析问题、给方案', b:'先安慰共情，陪着 TA' },
+  { dual:true, text:'需要表达不同意见时，你更看重？',
+    a:'逻辑站得住，就该直说', b:'表达方式要照顾对方感受' },
+  { dual:true, text:'评价一件事的结果时，你更看重？',
+    a:'客观标准和实际产出', b:'过程中的付出与心意' },
+  { dual:false, text:'你认为「公平」应该是？',
+    a:'规则面前人人平等', b:'具体情况具体对待' },
+  { dual:false, text:'哪句评价更符合你？',
+    a:'说话直接，对事不对人', b:'细心体贴，会照顾人' },
+],
+JP: [
+  { dual:true, text:'你更喜欢怎样安排工作日程（或周末时间）？',
+    a:'提前计划好，按部就班', b:'随性而为，看当时状态' },
+  { dual:true, text:'面对截止时间（deadline 或约定日期），你通常？',
+    a:'提前完成，心里才踏实', b:'最后关头冲刺，效率反而高' },
+  { dual:false, text:'旅行出发前，你会？',
+    a:'做详细攻略，行程排到小时', b:'订好大交通和住处，到了再说' },
+  { dual:true, text:'你的电脑桌面（或家里环境）是？',
+    a:'分类归档，井井有条', b:'随手放，但我自己知道东西在哪' },
+  { dual:true, text:'同时有几件事悬而未决时，你会？',
+    a:'尽早逐件定下来收尾', b:'都先放着，到时候见招拆招' },
+  { dual:false, text:'原定计划突然被打乱，你会？',
+    a:'有点烦躁，感觉失控', b:'无所谓，随机应变' },
+  { dual:false, text:'待办清单上没做完的事，会让你？',
+    a:'一直挂在心上，想赶紧清掉', b:'放着就放着，到点再说' },
+],
+};
+const QUESTIONS = (() => {
+  const out = [];
+  for (let i = 0; i < 7; i++) for (const d of DIM_ORDER) out.push(Object.assign({}, BY_DIM[d][i], { dim: d }));
+  return out;
+})();
+const N = QUESTIONS.length;
+
+/* ============ 16 型与维度释义 ============ */
+const TYPE_INFO = {
+  INTJ: { name:'战略架构师', desc:'长远谋划、独立深思的系统构建者，善于把复杂问题拆解成可执行的路径。' },
+  INTP: { name:'逻辑学家',   desc:'痴迷于原理与可能性的分析者，思维敏捷，享受纯粹的智力探索。' },
+  ENTJ: { name:'指挥官',     desc:'目标导向、决断力强的天然领导者，善于调动资源推动结果落地。' },
+  ENTP: { name:'辩论家',     desc:'点子层出不穷的创新催化者，热衷挑战常规与既有假设。' },
+  INFJ: { name:'提倡者',     desc:'洞察人心、坚守价值观的理想主义者，安静而有感染力。' },
+  INFP: { name:'调停者',     desc:'内心丰盈、忠于自我的理想主义者，用价值观丈量世界。' },
+  ENFJ: { name:'主人公',     desc:'善于激励他人、凝聚人心的引导者，天然的团队核心。' },
+  ENFP: { name:'竞选者',     desc:'热情洋溢的探索者，擅长连接人与人、想法与可能性。' },
+  ISTJ: { name:'物流师',     desc:'严谨可靠、恪尽职守的执行者，组织可以放心托付的人。' },
+  ISFJ: { name:'守卫者',     desc:'细致体贴、默默付出的支持者，用行动守护身边的人。' },
+  ESTJ: { name:'总经理',     desc:'务实高效、善于组织的管理者，让混乱变得井然有序。' },
+  ESFJ: { name:'执政官',     desc:'热心周到的氛围担当，敏锐觉察并照顾他人的需求。' },
+  ISTP: { name:'鉴赏家',     desc:'冷静务实的实干家，擅长动手解决眼前的问题。' },
+  ISFP: { name:'探险家',     desc:'温和低调的体验派，审美敏锐，活在当下。' },
+  ESTP: { name:'企业家',     desc:'行动力满格的冒险家，嗅觉敏锐，敢想敢干。' },
+  ESFP: { name:'表演者',     desc:'感染力极强的现场之王，把生活过成舞台。' },
+};
+const DIM_INFO = {
+  E: { label:'外向', desc:'能量指向外部世界：从人际互动中回血，边说边想，反应直接。' },
+  I: { label:'内向', desc:'能量指向内心世界：从独处思考中回血，先想后说，偏好深度交流。' },
+  S: { label:'实感', desc:'信任具体事实与经验：关注细节与落地性，做事讲求步骤可靠。' },
+  N: { label:'直觉', desc:'关注模式与可能性：擅长抽象与联想，被愿景和新鲜感驱动。' },
+  T: { label:'思考', desc:'决策以逻辑与利弊为依据：对事不对人，重视公平与效率。' },
+  F: { label:'情感', desc:'决策以价值与感受为依据：重视人的因素，追求和谐与认同。' },
+  J: { label:'判断', desc:'偏好计划与确定：喜欢提前安排、按节点推进、尽快收尾。' },
+  P: { label:'知觉', desc:'偏好灵活与开放：喜欢保留选项、随势调整、临近爆发。' },
+};
+
+/* ============ 场景切换洞察文案 ============ */
+const FLIP_AB = { /* 工作偏 A（E/S/T/J）→ 生活偏 B（I/N/F/P） */
+  EI: { t:'对外运转，向内充电', x:'工作中的你能开会、能表达、越聊状态越好，但你的能量补给其实来自独处。你不是「变外向了」，而是练出了职业化的外向——下班后的安静，才是你真正的回血方式。' },
+  SN: { t:'务实的手，天马的心', x:'工作中的你盯着数据、细节和落地路径，但生活里的你常冒出「换一种活法会怎样」的念头。务实是你的职业策略，不是你的全部底色——别让 KPI 定义你的想象力。' },
+  TF: { t:'对事讲逻辑，对人重感情', x:'决策桌上你冷静克制、利弊分明；面对亲近的人却柔软甚至心软。这不是分裂，而是完整的你：理性是你的工作语言，感情才是你的母语。' },
+  JP: { t:'上班守规矩，下班要自由', x:'日程表、节点、deadline 让你在工作中井井有条，但你内心其实渴望随性。自律是职业素养，松弛才是你的自然状态——留意别把「绷着」过成常态。' },
+};
+const FLIP_BA = { /* 工作偏 B（I/N/F/P）→ 生活偏 A（E/S/T/J） */
+  EI: { t:'职场惜字如金，生活打开话匣', x:'工作中你偏安静、先想后说；生活里你反而健谈活跃。也许当前的工作环境暂时收住了你的表达欲——你的社交能量没有消失，只是换了出口。' },
+  SN: { t:'谈愿景的人，过务实的生活', x:'你习惯在工作中谈趋势、谈可能性，但生活里你其实活在当下、在意真实体验。理想主义是你的工作界面，还是生活让你落回地面？值得想一想。' },
+  TF: { t:'为协作做投入，本质偏理性', x:'工作中你照顾他人感受、维护氛围，但你判断事物其实相当理性——你的「高情商」更像是刻意练习的职业能力，而非纯粹的感性驱动。' },
+  JP: { t:'deadline 战士，天性随性', x:'你靠截止线和计划撑起工作产出，但骨子里偏好灵活与即兴。长期用「绷紧」换产出，其实是在透支自发能量——试着给自己留一些不设截止的空白。' },
+};
+/* ============ 状态与存储 ============ */
+let state = null;
+let autoTimer = null;
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) { return null; }
+}
+function saveState() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+function freshState() {
+  return { status:'in_progress', index:0,
+    answers: QUESTIONS.map(q => q.dual ? { w:null, l:null } : { g:null }) };
+}
+
+/* ============ 视图切换 ============ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+/* ============ 欢迎页 ============ */
+function renderWelcome() {
+  const el = document.getElementById('screen-welcome');
+  let html = '<div class="card">'
+    + '<span class="hero-tag">自我认知工具</span>'
+    + '<div class="hero-title">看见不同场景下的你</div>'
+    + '<div class="hero-desc">同一个你，在会议室和客厅里可能是两个人。本测评基于经典 MBTI 四维度，'
+    + '对每道核心题分别采集你在<b>工作</b>与<b>生活</b>两种场景下的倾向，生成你的双场景性格对照报告。</div>'
+    + '<div class="meta-chips"><span class="meta-chip">28 题</span><span class="meta-chip">约 5–8 分钟</span>'
+    + '<span class="meta-chip">四维度 E/I · S/N · T/F · J/P</span><span class="meta-chip">结果仅存本机</span></div>'
+    + '<div class="dim-grid">'
+    + '<div class="dim-cell"><b>E / I 能量方向</b><span>从人群互动，还是独处思考中回血</span></div>'
+    + '<div class="dim-cell"><b>S / N 信息获取</b><span>关注具体事实，还是模式与可能性</span></div>'
+    + '<div class="dim-cell"><b>T / F 决策依据</b><span>逻辑利弊，还是价值与感受</span></div>'
+    + '<div class="dim-cell"><b>J / P 生活风格</b><span>计划确定，还是灵活开放</span></div>'
+    + '</div>'
+    + '<ul class="notice-list">'
+    + '<li>没有对错之分，凭第一直觉作答，不必反复推敲</li>'
+    + '<li>核心题需在「工作」「生活」两个场景分别作答，用于生成对照</li>'
+    + '<li>进度与结果自动保存在本机浏览器，中途关闭不会丢失</li>'
+    + '</ul>';
+
+  if (!state || (state.status === 'in_progress' && !state.answers)) {
+    html += '<button class="btn btn-primary btn-block" data-act="start">开始测评</button>';
+  } else if (state.status === 'in_progress') {
+    const answered = state.answers.filter(a => a && isComplete(a)).length;
+    html += '<div class="resume-box">上次测评进行到第 <b>' + Math.min(state.index + 1, N)
+      + ' / ' + N + '</b> 题（已完成 ' + answered + ' 题）。</div>'
+      + '<div class="btn-row">'
+      + '<button class="btn btn-primary" data-act="resume">继续测评</button>'
+      + '<button class="btn btn-ghost" data-act="restart">重新开始</button></div>';
+  } else {
+    const r = state.result, t = TYPE_INFO[r.type] || { name:'', desc:'' };
+    html += '<div class="result-mini"><div class="rm-code">' + r.type + '</div>'
+      + '<div class="rm-info"><div class="rm-name">' + t.name + '</div>'
+      + '<div class="rm-date">完成于 ' + fmtDate(r.completedAt) + ' · 点击查看完整报告</div></div></div>'
+      + '<div class="btn-row">'
+      + '<button class="btn btn-primary" data-act="view">查看完整报告</button>'
+      + '<button class="btn btn-ghost" data-act="retake">重新测评</button></div>';
+  }
+  html += '</div>'
+    + '<div class="disclaimer">本工具为自我报告式性格测评，仅供个人参考，不构成心理诊断或职业决策依据。'
+    + '所有数据仅存储于本机浏览器（localStorage），不上传任何服务器。</div>';
+  el.innerHTML = html;
+}
+
+/* ============ 答题页 ============ */
+const SCALE = [
+  { v:-2, sym:'▲▲', lbl:'很认同 A' },
+  { v:-1, sym:'▲',  lbl:'较认同 A' },
+  { v: 0, sym:'●',  lbl:'两可' },
+  { v: 1, sym:'▼',  lbl:'较认同 B' },
+  { v: 2, sym:'▼▼', lbl:'很认同 B' },
+];
+
+function isComplete(ans) {
+  if (!ans) return false;
+  if ('w' in ans) return ans.w !== null && ans.l !== null;
+  return ans.g !== null;
+}
+
+function sceneBlock(key, cls, title, note, q, cur) {
+  let btns = '';
+  for (const s of SCALE) {
+    const sel = (cur === s.v) ? ' selected' : '';
+    btns += '<button class="scale-btn' + sel + '" data-scene="' + key + '" data-v="' + s.v + '">'
+      + '<span class="sym">' + s.sym + '</span><span class="lbl">' + s.lbl + '</span></button>';
+  }
+  return '<div class="scene-block' + (cls === 'life' ? ' scene-life' : '') + '" id="block-' + key + '">'
+    + '<div class="scene-head"><i class="scene-dot ' + cls + '"></i>' + title
+    + '<span class="scene-note">· ' + note + '</span></div>'
+    + '<div class="stmt"><b>A</b>' + q.a + '</div>'
+    + '<div class="scale-row">' + btns + '</div>'
+    + '<div class="stmt stmt-b"><b>B</b>' + q.b + '</div></div>';
+}
+
+function renderQuiz() {
+  const i = state.index, q = QUESTIONS[i], ans = state.answers[i];
+  let sceneHtml;
+  if (q.dual) {
+    sceneHtml = sceneBlock('w', 'work', '工作场景', '职场情境中的你', q, ans ? ans.w : null)
+      + sceneBlock('l', 'life', '生活场景', '日常与私人情境中的你', q, ans ? ans.l : null);
+  } else {
+    sceneHtml = sceneBlock('g', 'gen', '综合评估', '不限场景，凭整体直觉', q, ans ? ans.g : null);
+  }
+  const done = isComplete(ans);
+  const last = i === N - 1;
+  document.getElementById('screen-quiz').innerHTML =
+    '<div class="quiz-top"><a class="quiz-exit" data-act="exit">‹ 退出测评</a>'
+    + '<span class="quiz-step">第 <b>' + (i + 1) + '</b> / ' + N + ' 题</span></div>'
+    + '<div class="progress-track"><div class="progress-fill" style="width:' + ((i + 1) / N * 100) + '%"></div></div>'
+    + '<div class="card">'
+    + '<div class="q-text">' + q.text + '</div>'
+    + '<div class="q-hint">' + (q.dual
+        ? '两种场景各选一次 · ▲ 认同 A 陈述，▼ 认同 B 陈述，● 两可'
+        : '▲ 认同 A 陈述 · ▼ 认同 B 陈述 · ● 两可') + '</div>'
+    + sceneHtml
+    + '<div class="nav-row">'
+    + '<button class="btn btn-gray" data-act="prev"' + (i === 0 ? ' disabled' : '') + '>‹ 上一题</button>'
+    + '<button class="btn btn-primary" data-act="next"' + (done ? '' : ' disabled') + '>'
+    + (last ? '生成报告' : '下一题 ›') + '</button></div>'
+    + '</div>';
+}
+
+/* ============ 答题交互 ============ */
+function onScalePick(scene, v) {
+  clearTimeout(autoTimer);
+  const i = state.index, q = QUESTIONS[i];
+  const ans = state.answers[i];
+  ans[scene] = v;
+  saveState();
+  /* 更新选中态（不整页重绘，避免闪烁） */
+  const block = document.getElementById('block-' + scene);
+  block.querySelectorAll('.scale-btn').forEach(b =>
+    b.classList.toggle('selected', +b.dataset.v === v));
+  /* 双场景题：选完工作后引导到生活块 */
+  if (q.dual && scene === 'w' && ans.l === null) {
+    setTimeout(() => {
+      const lb = document.getElementById('block-l');
+      if (lb) lb.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }, 180);
+  }
+  if (!isComplete(ans)) return;
+  /* 已完成：启用下一题按钮并自动前进 */
+  const nb = document.querySelector('#screen-quiz [data-act="next"]');
+  if (nb) { nb.disabled = false; if (i === N - 1) nb.textContent = '生成报告'; }
+  autoTimer = setTimeout(() => {
+    if (state.index !== i) return;
+    if (i < N - 1) { state.index = i + 1; saveState(); renderQuiz(); window.scrollTo(0, 0); }
+    else finishQuiz();
+  }, 520);
+}
+
+function goPrev() {
+  clearTimeout(autoTimer);
+  if (state.index > 0) { state.index--; saveState(); renderQuiz(); window.scrollTo(0, 0); }
+}
+function goNext() {
+  clearTimeout(autoTimer);
+  const i = state.index;
+  if (!isComplete(state.answers[i])) return;
+  if (i < N - 1) { state.index = i + 1; saveState(); renderQuiz(); window.scrollTo(0, 0); }
+  else finishQuiz();
+}
+
+/* ============ 计分引擎 ============ */
+function computeScores(answers) {
+  const work = { EI:0, SN:0, TF:0, JP:0 }, life = { EI:0, SN:0, TF:0, JP:0 };
+  QUESTIONS.forEach((q, i) => {
+    const a = answers[i]; if (!a) return;
+    if (q.dual) { work[q.dim] += a.w; life[q.dim] += a.l; }
+    else { work[q.dim] += a.g; life[q.dim] += a.g; }
+  });
+  const overall = {};
+  for (const d of DIM_ORDER) overall[d] = (work[d] + life[d]) / 2;
+  return { work, life, overall };
+}
+/* A 侧（E/S/T/J）百分比；score∈[-14,14] → [0,100] */
+function pctA(score) { return Math.round(Math.min(14, Math.max(-14, score)) / 28 * 100 + 50); }
+function typeOf(scores) {
+  let t = '';
+  for (const d of DIM_ORDER) {
+    const def = DIM_DEFS[d], s = scores.overall[d];
+    if (s < 0) t += def.a;
+    else if (s > 0) t += def.b;
+    else t += scores.life[d] > 0 ? def.b : def.a; /* 罕见平局：以生活场景定夺 */
+  }
+  return t;
+}
+
+/* ============ 场景差异分析 ============ */
+function analyzeDims(scores) {
+  return DIM_ORDER.map(d => {
+    const def = DIM_DEFS[d], w = scores.work[d], l = scores.life[d];
+    const pw = pctA(w), pl = pctA(l), diffPp = Math.abs(pw - pl);
+    const flip = w * l < 0;
+    let level;
+    if (flip && diffPp >= 7) level = 'flip';
+    else if (!flip && diffPp >= 18) level = 'strong';
+    else if (diffPp >= 7) level = 'mild';
+    else level = 'stable';
+    return { key:d, def, w, l, pw, pl, diffPp, flip, level };
+  });
+}
+function insightText(d) {
+  if (d.level === 'flip') {
+    const c = d.w < 0 ? FLIP_AB[d.key] : FLIP_BA[d.key];
+    return c;
+  }
+  if (d.level === 'strong') {
+    const workSide = d.w < 0 ? d.def.a : d.def.b;
+    const lifeSide = d.l < 0 ? d.def.a : d.def.b;
+    if (Math.abs(d.w) > Math.abs(d.l)) {
+      return { t:workSide + ' 倾向在工作中被放大',
+        x:'「' + workSide + '」倾向在工作场景明显更强（差 ' + d.diffPp + ' 个百分点）。职业角色正在放大这一特质——它帮你胜任工作，但也留意别让「工作模式」挤占生活的比重。' };
+    }
+    return { t:lifeSide + ' 才是你的自然状态',
+      x:'「' + lifeSide + '」倾向在生活场景更突出（差 ' + d.diffPp + ' 个百分点）。卸下工作角色后，这更接近不受修饰的你。' };
+  }
+  if (d.level === 'mild') {
+    return { t:'轻度场景差异',
+      x:'工作与生活在该维度存在轻度差异（' + d.diffPp + ' 个百分点），属于正常的情境波动。' };
+  }
+  return { t:'跨场景稳定',
+    x:'该维度在工作与生活中高度一致，是你稳定的性格底色。' };
+}
+
+/* ============ 报告渲染 ============ */
+function finishQuiz() {
+  const scores = computeScores(state.answers);
+  state = { status:'completed',
+    result: { type: typeOf(scores), scores, answers: state.answers, completedAt: new Date().toISOString() } };
+  saveState();
+  renderReport();
+  showScreen('screen-report');
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso), p = n => (n < 10 ? '0' + n : '' + n);
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function pctStr(def, pA) { return def.a + ' ' + pA + '% · ' + def.b + ' ' + (100 - pA) + '%'; }
+
+function renderReport() {
+  const r = state.result, scores = r.scores, info = TYPE_INFO[r.type] || { name:'', desc:'' };
+  const dims = analyzeDims(scores);
+  const sorted = [...dims].sort((a, b) => b.diffPp - a.diffPp);
+  const top = sorted[0];
+
+  /* ---- 头部 ---- */
+  let html = '<div class="card type-hero">'
+    + '<div class="type-code">' + r.type + '</div>'
+    + '<div class="type-name">' + info.name + '</div>'
+    + '<div class="type-desc">' + info.desc + '</div>'
+    + '<div class="type-meta">完成于 ' + fmtDate(r.completedAt) + ' · ' + N + ' 题 · 双场景模式 · 数据仅存本机</div>'
+    + '</div>';
+
+  /* ---- 本次测评发现 ---- */
+  const chipOf = d => {
+    const nm = d.def.a + '/' + d.def.b;
+    if (d.level === 'flip') return '<span class="chip chip-flip">' + nm + ' 场景切换</span>';
+    if (d.level === 'strong') return '<span class="chip chip-strong">' + nm + (Math.abs(d.w) > Math.abs(d.l) ? ' 工作更强' : ' 生活更强') + '</span>';
+    if (d.level === 'mild') return '<span class="chip chip-mild">' + nm + ' 轻度差异</span>';
+    return '<span class="chip chip-stable">' + nm + ' 跨场景稳定</span>';
+  };
+  let kicker, title, text;
+  if (top.level === 'flip') {
+    kicker = '本次测评发现'; const c = insightText(top);
+    title = c.t; text = c.x;
+  } else if (top.level === 'strong') {
+    kicker = '本次测评发现'; const c = insightText(top);
+    title = c.t; text = c.x;
+  } else {
+    kicker = '本次测评发现';
+    title = '你的性格结构跨情境高度稳定';
+    text = '四个维度均未出现明显的工作 / 生活切换——你在职场呈现的，基本就是「原生的你」。'
+      + '这种一致性本身就是一种稀缺特质：不需要频繁切换面具，认知与行为的能耗更低。';
+  }
+  html += '<div class="section-title">洞察摘要</div>'
+    + '<div class="insight-card"><div class="insight-kicker">' + kicker + '</div>'
+    + '<div class="insight-title">' + title + '</div>'
+    + '<div class="insight-text">' + text + '</div>'
+    + '<div class="insight-chips">' + dims.map(chipOf).join('') + '</div></div>';
+
+  /* ---- 综合维度倾向 ---- */
+  html += '<div class="section-title">维度评分与倾向</div><div class="card">';
+  for (const d of dims) {
+    const o = scores.overall[d.key], po = pctA(o);
+    let domChar, domDesc;
+    if (Math.abs(o) < 0.5) {
+      domChar = '均衡';
+      domDesc = '两侧倾向接近均衡（临界型），该维度可能随情境与人生阶段波动，不必急于给自己下定论。';
+    } else {
+      domChar = o < 0 ? d.def.a : d.def.b;
+      domDesc = DIM_INFO[domChar].label + '：' + DIM_INFO[domChar].desc;
+    }
+    html += '<div class="dim-block">'
+      + '<div class="dim-head"><span class="dim-name">' + DIM_INFO[d.def.a].label + ' / ' + DIM_INFO[d.def.b].label
+      + ' <span class="letters">' + d.def.a + ' — ' + d.def.b + '</span></span>'
+      + '<span class="dim-pct">' + pctStr(d.def, po) + '</span></div>'
+      + '<div class="bar-track"><div class="bar-fill overall" data-w="' + po + '"></div><div class="bar-mid"></div></div>'
+      + '<div class="dim-desc"><b>' + domChar + '</b> · ' + domDesc + '</div>'
+      + '</div>';
+  }
+  html += '</div>';
+
+  /* ---- 工作 / 生活对比 ---- */
+  html += '<div class="section-title">工作 × 生活 对比</div>'
+    + '<div class="legend"><span><i style="background:#2C6AA0"></i>工作场景</span>'
+    + '<span><i style="background:#DE8430"></i>生活场景</span>'
+    + '<span>条形长度 = ' + DIM_DEFS.EI.a + '/' + DIM_DEFS.EI.b + ' 侧（E/S/T/J）倾向占比，中线为 50%</span></div>';
+  for (const d of dims) {
+    const c = insightText(d);
+    const domW = d.pw >= 50 ? d.def.a : d.def.b;
+    const domL = d.pl >= 50 ? d.def.a : d.def.b;
+    const vw = domW + ' ' + Math.max(d.pw, 100 - d.pw) + '%';
+    const vl = domL + ' ' + Math.max(d.pl, 100 - d.pl) + '%';
+    let badge;
+    if (d.level === 'flip') badge = '<span class="chip chip-flip">场景切换</span>';
+    else if (d.level === 'strong') badge = '<span class="chip chip-strong">' + (Math.abs(d.w) > Math.abs(d.l) ? '工作更强' : '生活更强') + '</span>';
+    else if (d.level === 'mild') badge = '<span class="chip chip-mild">轻度差异</span>';
+    else badge = '<span class="chip chip-stable">基本一致</span>';
+    html += '<div class="cmp-card' + (d.level === 'flip' ? ' hl-flip' : '') + '">'
+      + '<div class="cmp-title">' + d.def.a + ' ' + DIM_INFO[d.def.a].label + ' · ' + d.def.b + ' ' + DIM_INFO[d.def.b].label + '</div>'
+      + '<div class="cmp-row"><span class="cmp-label"><i class="scene-dot work"></i>工作</span>'
+      + '<div class="cmp-bar"><div class="bar-fill work" data-w="' + d.pw + '"></div><div class="bar-mid"></div></div>'
+      + '<span class="cmp-val">' + vw + '</span></div>'
+      + '<div class="cmp-row"><span class="cmp-label"><i class="scene-dot life"></i>生活</span>'
+      + '<div class="cmp-bar"><div class="bar-fill life" data-w="' + d.pl + '"></div><div class="bar-mid"></div></div>'
+      + '<span class="cmp-val">' + vl + '</span></div>'
+      + '<div class="cmp-foot">' + badge + '<span class="cmp-diff">差异 ' + d.diffPp + ' 个百分点</span></div>'
+      + '<div class="cmp-insight"><b>' + c.t + '。</b>' + c.x + '</div>'
+      + '</div>';
+  }
+
+  /* ---- 操作区与声明 ---- */
+  html += '<div class="btn-row no-print" style="margin-top:18px">'
+    + '<button class="btn btn-primary" data-act="retake">重新测评</button>'
+    + '<button class="btn btn-ghost" data-act="home">返回首页</button></div>'
+    + '<div class="disclaimer">工作 / 生活百分比由双场景题（每维度每场景 4 题）与综合题共同计算，反映作答时的自我认知倾向。'
+    + '本报告仅供个人参考，不构成心理诊断或职业决策依据；数据仅存于本机浏览器。</div>';
+
+  const el = document.getElementById('screen-report');
+  el.innerHTML = html;
+  /* 触发条形动画 */
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.querySelectorAll('.bar-fill[data-w]').forEach(b => { b.style.width = b.dataset.w + '%'; });
+  }));
+}
+
+/* ============ 事件绑定与初始化 ============ */
+function confirmRetake() {
+  return window.confirm(state && state.status === 'completed'
+    ? '重新测评将覆盖当前已保存的结果，确定继续吗？'
+    : '重新开始将清空当前答题进度，确定继续吗？');
+}
+
+document.getElementById('screen-welcome').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'start') { state = freshState(); saveState(); renderQuiz(); showScreen('screen-quiz'); }
+  else if (act === 'resume') { renderQuiz(); showScreen('screen-quiz'); }
+  else if (act === 'restart') { if (confirmRetake()) { state = freshState(); saveState(); renderQuiz(); showScreen('screen-quiz'); } }
+  else if (act === 'view') { renderReport(); showScreen('screen-report'); }
+  else if (act === 'retake') { if (confirmRetake()) { state = freshState(); saveState(); renderQuiz(); showScreen('screen-quiz'); } }
+});
+document.getElementById('screen-quiz').addEventListener('click', e => {
+  const s = e.target.closest('.scale-btn');
+  if (s) { onScalePick(s.dataset.scene, +s.dataset.v); return; }
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.disabled) return;
+  if (b.dataset.act === 'prev') goPrev();
+  else if (b.dataset.act === 'next') goNext();
+  else if (b.dataset.act === 'exit') { renderWelcome(); showScreen('screen-welcome'); }
+});
+document.getElementById('screen-report').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.dataset.act === 'retake') { if (confirmRetake()) { state = freshState(); saveState(); renderQuiz(); showScreen('screen-quiz'); } }
+  else if (b.dataset.act === 'home') { renderWelcome(); showScreen('screen-welcome'); }
+});
+
+state = loadState();
+renderWelcome();
+showScreen('screen-welcome');
+</script>
+</body>
+</html>

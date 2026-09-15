@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBTI 性格测评 — 交互原型</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body {
+  font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background:#EDF1F5; color:#2D3748; line-height:1.65; font-size:14px;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ===== 顶部工具栏 ===== */
+.proto-bar {
+  position:fixed; top:0; left:0; right:0; height:52px; z-index:1000;
+  background:#fff; border-bottom:1px solid #D8E0E8;
+  display:flex; align-items:center; gap:0; padding:0 16px;
+  box-shadow:0 1px 4px rgba(45,55,72,.06);
+}
+.proto-brand { font-size:15px; font-weight:700; color:#2C6AA0; white-space:nowrap; margin-right:16px; }
+.proto-brand .ver { font-size:11px; font-weight:400; color:#A0AEC0; margin-left:6px; }
+.proto-nav { display:flex; gap:2px; flex:1; overflow-x:auto; }
+.proto-nav-item {
+  font-size:12.5px; padding:6px 12px; border-radius:8px; cursor:pointer;
+  white-space:nowrap; color:#5B6B7C; border:1px solid transparent; transition:all .15s;
+  display:flex; align-items:center; gap:5px;
+}
+.proto-nav-item:hover { background:#EAF3FB; }
+.proto-nav-item.active { background:#3B82C4; color:#fff; border-color:#3B82C4; }
+.proto-nav-item .nav-badge { font-size:9px; font-weight:700; background:rgba(255,255,255,.2); border-radius:4px; padding:1px 5px; }
+.proto-nav-item.active .nav-badge { background:rgba(255,255,255,.25); }
+.proto-tools { display:flex; gap:6px; margin-left:12px; }
+.proto-tool-btn {
+  font-size:12px; padding:5px 10px; border-radius:8px; cursor:pointer;
+  border:1px solid #D8E0E8; background:#fff; color:#5B6B7C; transition:all .15s;
+  display:flex; align-items:center; gap:4px;
+}
+.proto-tool-btn:hover { border-color:#BFD8EC; color:#2C6AA0; }
+.proto-tool-btn.active { background:#F0F7FD; border-color:#BFD8EC; color:#2C6AA0; }
+
+/* ===== 画布区域 ===== */
+.proto-canvas {
+  margin-top:52px; padding:32px 20px 80px; min-height:calc(100vh - 52px);
+  display:flex; flex-direction:column; align-items:center;
+}
+.device-frame {
+  width:100%; max-width:420px; background:#fff;
+  border-radius:18px; box-shadow:0 2px 8px rgba(45,55,72,.08), 0 12px 40px rgba(45,55,72,.06);
+  overflow:hidden; border:1px solid #E2E8F0; position:relative;
+  transition:max-width .3s;
+}
+.device-frame.wide { max-width:760px; }
+.device-screen {
+  min-height:600px; padding:0; position:relative;
+}
+
+/* ===== 标注层 ===== */
+.annotate-layer { display:none; }
+.annotate-layer.show { display:block; }
+.anno {
+  position:absolute; z-index:50; background:#FFF8E1; border:1.5px solid #F6C648;
+  border-radius:8px; padding:6px 10px; font-size:11px; line-height:1.55;
+  color:#7B6512; max-width:200px; box-shadow:0 2px 8px rgba(180,150,30,.15);
+  pointer-events:none;
+}
+.anno::before {
+  content:''; position:absolute; width:8px; height:8px; background:#F6C648;
+  border-radius:50%; top:-4px; left:16px;
+}
+.anno b { color:#9B7800; }
+
+/* ===== 屏幕标签 ===== */
+.screen-label {
+  font-size:12px; color:#8A98A9; margin-bottom:14px; text-align:center; font-weight:600;
+}
+.screen-label b { color:#2C6AA0; }
+
+/* ===== 手机/桌面切换提示 ===== */
+.device-info {
+  position:fixed; bottom:16px; right:20px; z-index:1000;
+  font-size:11px; color:#A0AEC0; background:#fff; border:1px solid #E2E8F0;
+  border-radius:8px; padding:4px 10px; box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+
+/* ===== 以下为模拟实际 UI 的样式 ===== */
+.sim-app { padding:20px 16px 48px; }
+.sim-brand { display:flex; align-items:baseline; gap:8px; margin-bottom:16px; }
+.sim-brand h1 { font-size:18px; font-weight:700; color:#2C6AA0; }
+.sim-brand .sub { font-size:12px; color:#8A98A9; }
+.sim-card {
+  background:#fff; border:1px solid #E2E8F0; border-radius:14px;
+  box-shadow:0 1px 3px rgba(45,55,72,.05), 0 6px 18px rgba(45,55,72,.04);
+  padding:22px; margin-bottom:14px;
+}
+.sim-tag { display:inline-block; font-size:11px; font-weight:600; color:#2C6AA0; background:#EAF3FB; border-radius:999px; padding:3px 11px; margin-bottom:10px; }
+.sim-h2 { font-size:23px; font-weight:800; margin-bottom:6px; color:#1F2937; }
+.sim-desc { color:#5B6B7C; font-size:13.5px; margin-bottom:16px; }
+.sim-chips { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:16px; }
+.sim-chip { font-size:11.5px; color:#4A6FA5; background:#EFF6FC; border:1px solid #D8E8F5; border-radius:999px; padding:4px 10px; }
+.sim-dim-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:16px; }
+.sim-dim { background:#FAFCFE; border:1px solid #E4EDF5; border-radius:10px; padding:9px 10px; }
+.sim-dim b { color:#2C6AA0; font-size:12px; display:block; }
+.sim-dim span { display:block; font-size:11px; color:#8A98A9; margin-top:1px; }
+.sim-notes { font-size:12px; color:#718096; margin:0 0 16px 16px; }
+.sim-notes li { margin:3px 0; }
+.sim-btn { display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:10px; font-family:inherit; font-weight:600; cursor:pointer; padding:11px 22px; font-size:14px; min-height:44px; transition:all .15s; }
+.sim-btn-primary { background:#3B82C4; color:#fff; }
+.sim-btn-primary:hover { background:#2C6AA0; }
+.sim-btn-ghost { background:#fff; color:#3B82C4; border:1.5px solid #BFD8EC; }
+.sim-btn-gray { background:#fff; color:#8A98A9; border:1.5px solid #E2E8F0; }
+.sim-btn[disabled] { opacity:.4; cursor:not-allowed; }
+.sim-btn-row { display:flex; gap:9px; }
+.sim-btn-row .sim-btn { flex:1; }
+.sim-disclaimer { font-size:11px; color:#A0AEC0; text-align:center; margin:14px 6px 0; line-height:1.6; }
+
+/* 答题页 */
+.sim-quiz-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+.sim-step { font-size:12px; color:#8A98A9; font-weight:600; }
+.sim-step b { color:#2C6AA0; font-size:14px; }
+.sim-exit { font-size:12px; color:#8A98A9; cursor:pointer; }
+.sim-progress { height:5px; background:#E4EDF5; border-radius:999px; overflow:hidden; margin-bottom:16px; }
+.sim-progress-fill { height:100%; background:linear-gradient(90deg,#5FA3DD,#2C6AA0); border-radius:999px; }
+.sim-q { font-size:16px; font-weight:700; color:#1F2937; margin-bottom:4px; line-height:1.5; }
+.sim-q-hint { font-size:11.5px; color:#8A98A9; margin-bottom:12px; }
+.sim-scene { border:1px solid #E2E8F0; border-radius:12px; padding:14px; margin-bottom:10px; background:#FDFEFF; }
+.sim-scene.life { border-color:#F0D8BC; }
+.sim-scene-head { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; margin-bottom:10px; }
+.sim-dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+.sim-dot.work { background:#3B82C4; }
+.sim-dot.life { background:#E8913A; }
+.sim-dot.gen { background:#8A98A9; }
+.sim-scene-note { font-weight:400; font-size:11px; color:#A0AEC0; }
+.sim-stmt { font-size:13px; color:#3A4A5C; padding:8px 10px; border-radius:8px; background:#F4F8FC; }
+.sim-stmt b { color:#2C6AA0; margin-right:5px; font-size:11px; }
+.sim-stmt.b { margin-top:4px; }
+.sim-scale { display:flex; gap:5px; margin:9px 0; }
+.sim-scale-btn { flex:1; background:#fff; border:1.5px solid #D9E4EF; border-radius:10px; padding:7px 1px 6px; cursor:pointer; font-family:inherit; display:flex; flex-direction:column; align-items:center; gap:2px; min-height:48px; transition:all .12s; }
+.sim-scale-btn .sym { font-size:13px; color:#8FA8C2; }
+.sim-scale-btn .lbl { font-size:9.5px; color:#A0AEC0; }
+.sim-scale-btn:hover { border-color:#8FB8DE; background:#F7FBFE; }
+.sim-scale-btn.sel { background:#3B82C4; border-color:#3B82C4; box-shadow:0 2px 8px rgba(59,130,196,.3); }
+.sim-scale-btn.sel .sym, .sim-scale-btn.sel .lbl { color:#fff; }
+.sim-scene.life .sim-scale-btn.sel { background:#E8913A; border-color:#E8913A; box-shadow:0 2px 8px rgba(232,145,58,.3); }
+.sim-nav { display:flex; gap:9px; margin-top:14px; }
+.sim-nav .sim-btn { flex:1; }
+
+/* 报告页 */
+.sim-type-hero { text-align:center; padding:26px 22px; }
+.sim-type-code { font-size:38px; font-weight:800; letter-spacing:5px; color:#2C6AA0; line-height:1.1; }
+.sim-type-name { font-size:15px; font-weight:700; color:#3A4A5C; margin-top:4px; }
+.sim-type-desc { font-size:13px; color:#718096; margin:6px auto 0; max-width:460px; }
+.sim-type-meta { font-size:11px; color:#A0AEC0; margin-top:12px; }
+.sim-section-title { display:flex; align-items:center; gap:7px; font-size:14.5px; font-weight:700; color:#1F2937; margin:22px 2px 10px; }
+.sim-section-title::before { content:''; width:3px; height:14px; background:#3B82C4; border-radius:2px; }
+.sim-insight { background:linear-gradient(135deg,#F0F7FD 0%,#FDF6EE 100%); border:1px solid #E4EDF5; border-radius:14px; padding:18px; }
+.sim-insight-kicker { font-size:11px; font-weight:700; color:#8A98A9; letter-spacing:2px; margin-bottom:6px; }
+.sim-insight-title { font-size:14.5px; font-weight:800; color:#1F2937; margin-bottom:6px; }
+.sim-insight-text { font-size:13px; color:#4A5A6C; line-height:1.65; }
+.sim-insight-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.sim-chip-flip { font-size:11px; font-weight:600; border-radius:999px; padding:3px 9px; background:#F3E8FD; color:#7C3AAD; border:1px solid #E2D2F5; }
+.sim-chip-strong { font-size:11px; font-weight:600; border-radius:999px; padding:3px 9px; background:#EAF3FB; color:#2C6AA0; border:1px solid #CFE3F3; }
+.sim-chip-mild { font-size:11px; font-weight:600; border-radius:999px; padding:3px 9px; background:#F1F5F9; color:#64748B; border:1px solid #E2E8F0; }
+.sim-chip-stable { font-size:11px; font-weight:600; border-radius:999px; padding:3px 9px; background:#EDF7F2; color:#2F7A57; border:1px solid #D5EAE0; }
+.sim-dim-block { margin-bottom:14px; }
+.sim-dim-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; gap:6px; flex-wrap:wrap; }
+.sim-dim-name { font-size:13px; font-weight:700; color:#2D3748; }
+.sim-dim-pct { font-size:12px; font-weight:700; color:#2C6AA0; }
+.sim-bar-track { position:relative; height:20px; background:#EDF2F7; border-radius:999px; overflow:hidden; }
+.sim-bar-fill { position:absolute; left:0; top:0; bottom:0; border-radius:999px; width:0; transition:width .8s ease; }
+.sim-bar-fill.overall { background:linear-gradient(90deg,#7C93AB,#5D7489); }
+.sim-bar-fill.work { background:linear-gradient(90deg,#5FA3DD,#2C6AA0); }
+.sim-bar-fill.life { background:linear-gradient(90deg,#F0AE6B,#DE8430); }
+.sim-bar-mid { position:absolute; left:50%; top:0; bottom:0; width:2px; background:rgba(45,55,72,.18); }
+.sim-dim-desc { font-size:11.5px; color:#8A98A9; margin-top:5px; }
+.sim-legend { display:flex; gap:12px; font-size:11px; color:#8A98A9; margin:0 2px 10px; flex-wrap:wrap; }
+.sim-legend i { display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:4px; vertical-align:-1px; }
+.sim-cmp { border:1px solid #E2E8F0; border-radius:12px; background:#fff; padding:14px; margin-bottom:10px; }
+.sim-cmp.hl { border-color:#D8C4EE; background:#FDFAFE; }
+.sim-cmp-title { font-size:13px; font-weight:700; margin-bottom:8px; color:#2D3748; }
+.sim-cmp-row { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+.sim-cmp-label { flex:0 0 40px; font-size:11px; font-weight:700; color:#5B6B7C; display:flex; align-items:center; gap:4px; }
+.sim-cmp-bar { flex:1; position:relative; height:18px; background:#EDF2F7; border-radius:999px; overflow:hidden; }
+.sim-cmp-val { flex:0 0 82px; text-align:right; font-size:11px; font-weight:700; color:#5B6B7C; }
+.sim-cmp-foot { display:flex; align-items:center; gap:7px; margin-top:8px; flex-wrap:wrap; }
+.sim-cmp-diff { font-size:11px; color:#8A98A9; }
+.sim-cmp-insight { font-size:12px; color:#4A5A6C; background:#F7FAFD; border-left:3px solid #BFD8EC; padding:8px 10px; border-radius:0 8px 8px 0; margin-top:8px; line-height:1.55; }
+.sim-cmp.hl .sim-cmp-insight { border-left-color:#C79BE8; background:#FBF7FD; }
+
+/* ===== 流程图覆盖层 ===== */
+.flow-overlay {
+  display:none; position:fixed; top:52px; left:0; right:0; bottom:0; z-index:900;
+  background:rgba(245,248,251,.97); overflow:auto; padding:40px 20px;
+}
+.flow-overlay.show { display:flex; justify-content:center; }
+.flow-diagram { max-width:720px; width:100%; }
+.flow-title { font-size:22px; font-weight:800; color:#2C6AA0; text-align:center; margin-bottom:24px; }
+.flow-step {
+  background:#fff; border:2px solid #BFD8EC; border-radius:14px; padding:18px 20px;
+  margin:0 auto 0; max-width:380px; position:relative; text-align:center;
+}
+.flow-step .fs-label { font-size:11px; font-weight:700; color:#8A98A9; letter-spacing:1px; margin-bottom:6px; }
+.flow-step .fs-title { font-size:15px; font-weight:700; color:#1F2937; margin-bottom:6px; }
+.flow-step .fs-desc { font-size:12px; color:#5B6B7C; line-height:1.55; }
+.flow-arrow {
+  text-align:center; color:#BFD8EC; font-size:22px; line-height:1; margin:6px 0;
+  font-weight:300;
+}
+.flow-branch { display:flex; gap:20px; justify-content:center; margin-bottom:0; }
+.flow-branch .flow-step { max-width:250px; }
+.flow-branch-label { text-align:center; font-size:11px; color:#8A98A9; margin:4px 0; }
+.flow-close {
+  position:fixed; top:62px; right:24px; z-index:950;
+  font-size:13px; cursor:pointer; background:#fff; border:1px solid #D8E0E8;
+  border-radius:8px; padding:6px 14px; color:#5B6B7C; box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+.flow-close:hover { color:#3B82C4; border-color:#BFD8EC; }
+</style>
+</head>
+<body>
+
+<!-- ===== 顶部工具栏 ===== -->
+<div class="proto-bar">
+  <div class="proto-brand">MBTI 交互原型 <span class="ver">v1.0 · 基于 PRD</span></div>
+  <div class="proto-nav" id="proto-nav"></div>
+  <div class="proto-tools">
+    <div class="proto-tool-btn" id="tool-device" onclick="toggleDevice()">手机</div>
+    <div class="proto-tool-btn" id="tool-anno" onclick="toggleAnno()">标注</div>
+    <div class="proto-tool-btn" id="tool-flow" onclick="toggleFlow()">流程图</div>
+  </div>
+</div>
+
+<!-- ===== 画布 ===== -->
+<div class="proto-canvas">
+  <div class="screen-label" id="screen-label"></div>
+  <div class="device-frame" id="device-frame">
+    <div class="device-screen" id="device-screen"></div>
+  </div>
+</div>
+
+<!-- ===== 流程图 ===== -->
+<div class="flow-overlay" id="flow-overlay">
+  <div class="flow-close" onclick="toggleFlow()">✕ 关闭</div>
+  <div class="flow-diagram">
+    <div class="flow-title">用户流程图</div>
+    <div class="flow-step">
+      <div class="fs-label">入口</div>
+      <div class="fs-title">欢迎页</div>
+      <div class="fs-desc">展示产品介绍、四维度说明、测评入口</div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-branch-label">根据 localStorage 状态分流</div>
+    <div class="flow-branch">
+      <div class="flow-step">
+        <div class="fs-label">状态 A · 无数据</div>
+        <div class="fs-title">开始测评</div>
+        <div class="fs-desc">首次进入，点击"开始测评"</div>
+      </div>
+      <div class="flow-step">
+        <div class="fs-label">状态 B · 进行中</div>
+        <div class="fs-title">继续测评</div>
+        <div class="fs-desc">中途退出，从断点继续</div>
+      </div>
+      <div class="flow-step">
+        <div class="fs-label">状态 C · 已完成</div>
+        <div class="fs-title">查看报告 / 重新测评</div>
+        <div class="fs-desc">回看上次结果或重新开始</div>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="fs-label">核心流程</div>
+      <div class="fs-title">答题页（28 题）</div>
+      <div class="fs-desc">混合模式：双场景题（工作+生活各选）与单场景题交错<br>支持回退修改 · 进度自动保存</div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="fs-label">计分引擎</div>
+      <div class="fs-title">四维度三维分数计算</div>
+      <div class="fs-desc">工作分 / 生活分 / 综合分 → 类型判定 → 场景差异分析</div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="fs-label">输出</div>
+      <div class="fs-title">报告页</div>
+      <div class="fs-desc">类型总览 → 洞察摘要 → 维度评分 → 工作×生活对比</div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-branch">
+      <div class="flow-step">
+        <div class="fs-label">操作</div>
+        <div class="fs-title">重新测评</div>
+        <div class="fs-desc">确认覆盖 → 回到答题页</div>
+      </div>
+      <div class="flow-step">
+        <div class="fs-label">操作</div>
+        <div class="fs-title">返回首页</div>
+        <div class="fs-desc">回到欢迎页（已完成状态）</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 设备信息 ===== -->
+<div class="device-info" id="device-info">390 × 760 · 移动端</div>
+
+<script>
+'use strict';
+
+/* ===== 屏幕定义 ===== */
+const SCREENS = [
+  { id:'welcome-new',   label:'欢迎页·首次',     badge:'A', render: renderWelcomeNew },
+  { id:'welcome-mid',   label:'欢迎页·进行中',   badge:'B', render: renderWelcomeMid },
+  { id:'welcome-done',  label:'欢迎页·已完成',   badge:'C', render: renderWelcomeDone },
+  { id:'quiz-dual',     label:'答题·双场景题',   badge:'D', render: renderQuizDual },
+  { id:'quiz-single',   label:'答题·单场景题',   badge:'E', render: renderQuizSingle },
+  { id:'quiz-last',     label:'答题·最后一题',   badge:'F', render: renderQuizLast },
+  { id:'report-type',   label:'报告·类型总览',   badge:'G', render: renderReportType },
+  { id:'report-insight',label:'报告·洞察摘要',   badge:'H', render: renderReportInsight },
+  { id:'report-dim',    label:'报告·维度评分',   badge:'I', render: renderReportDim },
+  { id:'report-cmp',     label:'报告·工作×生活', badge:'J', render: renderReportCmp },
+];
+
+let currentScreen = 0;
+let isWide = false;
+let showAnno = false;
+
+/* ===== 渲染引擎 ===== */
+function renderNav() {
+  const nav = document.getElementById('proto-nav');
+  nav.innerHTML = SCREENS.map((s, i) =>
+    `<div class="proto-nav-item ${i===currentScreen?'active':''}" onclick="switchScreen(${i})">${s.label}<span class="nav-badge">${s.badge}</span></div>`
+  ).join('');
+}
+
+function switchScreen(i) {
+  currentScreen = i;
+  const s = SCREENS[i];
+  document.getElementById('screen-label').innerHTML = `屏幕 <b>${s.badge}</b> — ${s.label}`;
+  document.getElementById('device-screen').innerHTML = s.render();
+  renderNav();
+  if (showAnno) applyAnnotations();
+  // 触发条形图动画
+  setTimeout(() => {
+    document.querySelectorAll('.sim-bar-fill[data-w]').forEach(b => { b.style.width = b.dataset.w + '%'; });
+  }, 100);
+}
+
+function toggleDevice() {
+  isWide = !isWide;
+  document.getElementById('device-frame').classList.toggle('wide', isWide);
+  document.getElementById('tool-device').classList.toggle('active', isWide);
+  document.getElementById('tool-device').textContent = isWide ? '桌面' : '手机';
+  document.getElementById('device-info').textContent = isWide ? '760 × 全高 · 桌面端' : '390 × 760 · 移动端';
+}
+
+function toggleAnno() {
+  showAnno = !showAnno;
+  document.getElementById('tool-anno').classList.toggle('active', showAnno);
+  if (showAnno) applyAnnotations(); else removeAnnotations();
+}
+
+function toggleFlow() {
+  const el = document.getElementById('flow-overlay');
+  el.classList.toggle('show');
+  document.getElementById('tool-flow').classList.toggle('active', el.classList.contains('show'));
+}
+
+function applyAnnotations() {
+  removeAnnotations();
+  const screen = document.getElementById('device-screen');
+  const annos = ANNOTATIONS[SCREENS[currentScreen].id] || [];
+  const layer = document.createElement('div');
+  layer.className = 'annotate-layer show';
+  layer.id = 'anno-layer';
+  annos.forEach(a => {
+    const d = document.createElement('div');
+    d.className = 'anno';
+    d.style.cssText = `top:${a.top};left:${a.left};right:${a.right||'auto'};`;
+    d.innerHTML = a.html;
+    layer.appendChild(d);
+  });
+  screen.appendChild(layer);
+}
+function removeAnnotations() {
+  const l = document.getElementById('anno-layer');
+  if (l) l.remove();
+}
+
+/* ===== 屏幕渲染函数 ===== */
+
+function renderWelcomeNew() {
+  return `<div class="sim-app">
+  <div class="sim-brand"><h1>MBTI 性格测评</h1><span class="sub">工作 / 生活双场景对照版</span></div>
+  <div class="sim-card">
+    <span class="sim-tag">自我认知工具</span>
+    <div class="sim-h2">看见不同场景下的你</div>
+    <div class="sim-desc">同一个你，在会议室和客厅里可能是两个人。本测评基于经典 MBTI 四维度，对每道核心题分别采集你在<b>工作</b>与<b>生活</b>两种场景下的倾向，生成你的双场景性格对照报告。</div>
+    <div class="sim-chips">
+      <span class="sim-chip">28 题</span><span class="sim-chip">约 5–8 分钟</span>
+      <span class="sim-chip">四维度 E/I · S/N · T/F · J/P</span><span class="sim-chip">结果仅存本机</span>
+    </div>
+    <div class="sim-dim-grid">
+      <div class="sim-dim"><b>E / I 能量方向</b><span>从人群互动，还是独处思考中回血</span></div>
+      <div class="sim-dim"><b>S / N 信息获取</b><span>关注具体事实，还是模式与可能性</span></div>
+      <div class="sim-dim"><b>T / F 决策依据</b><span>逻辑利弊，还是价值与感受</span></div>
+      <div class="sim-dim"><b>J / P 生活风格</b><span>计划确定，还是灵活开放</span></div>
+    </div>
+    <ul class="sim-notes">
+      <li>没有对错之分，凭第一直觉作答，不必反复推敲</li>
+      <li>核心题需在「工作」「生活」两个场景分别作答，用于生成对照</li>
+      <li>进度与结果自动保存在本机浏览器，中途关闭不会丢失</li>
+    </ul>
+    <button class="sim-btn sim-btn-primary" style="width:100%" onclick="switchScreen(3)">开始测评</button>
+  </div>
+  <div class="sim-disclaimer">本工具为自我报告式性格测评，仅供个人参考，不构成心理诊断或职业决策依据。所有数据仅存储于本机浏览器（localStorage），不上传任何服务器。</div>
+</div>`;
+}
+
+function renderWelcomeMid() {
+  return `<div class="sim-app">
+  <div class="sim-brand"><h1>MBTI 性格测评</h1><span class="sub">工作 / 生活双场景对照版</span></div>
+  <div class="sim-card">
+    <span class="sim-tag">自我认知工具</span>
+    <div class="sim-h2">看见不同场景下的你</div>
+    <div class="sim-desc">同一个你，在会议室和客厅里可能是两个人。本测评基于经典 MBTI 四维度，对每道核心题分别采集你在<b>工作</b>与<b>生活</b>两种场景下的倾向。</div>
+    <div class="sim-chips">
+      <span class="sim-chip">28 题</span><span class="sim-chip">约 5–8 分钟</span>
+      <span class="sim-chip">四维度</span><span class="sim-chip">结果仅存本机</span>
+    </div>
+    <div class="sim-dim-grid">
+      <div class="sim-dim"><b>E / I 能量方向</b><span>从人群互动，还是独处思考中回血</span></div>
+      <div class="sim-dim"><b>S / N 信息获取</b><span>关注具体事实，还是模式与可能性</span></div>
+      <div class="sim-dim"><b>T / F 决策依据</b><span>逻辑利弊，还是价值与感受</span></div>
+      <div class="sim-dim"><b>J / P 生活风格</b><span>计划确定，还是灵活开放</span></div>
+    </div>
+    <div style="background:#F0F7FD;border:1px dashed #BFD8EC;border-radius:10px;padding:13px;margin-bottom:16px;font-size:13px;color:#3E5F80;">
+      上次测评进行到第 <b>15 / 28</b> 题（已完成 14 题）。
+    </div>
+    <div class="sim-btn-row">
+      <button class="sim-btn sim-btn-primary" onclick="switchScreen(3)">继续测评</button>
+      <button class="sim-btn sim-btn-ghost" onclick="switchScreen(3)">重新开始</button>
+    </div>
+  </div>
+  <div class="sim-disclaimer">本工具为自我报告式性格测评，仅供个人参考。数据仅存于本机浏览器。</div>
+</div>`;
+}
+
+function renderWelcomeDone() {
+  return `<div class="sim-app">
+  <div class="sim-brand"><h1>MBTI 性格测评</h1><span class="sub">工作 / 生活双场景对照版</span></div>
+  <div class="sim-card">
+    <span class="sim-tag">自我认知工具</span>
+    <div class="sim-h2">看见不同场景下的你</div>
+    <div class="sim-desc">同一个你，在会议室和客厅里可能是两个人。本测评基于经典 MBTI 四维度。</div>
+    <div class="sim-chips">
+      <span class="sim-chip">28 题</span><span class="sim-chip">约 5–8 分钟</span>
+      <span class="sim-chip">四维度</span><span class="sim-chip">结果仅存本机</span>
+    </div>
+    <div class="sim-dim-grid">
+      <div class="sim-dim"><b>E / I 能量方向</b><span>从人群互动，还是独处思考中回血</span></div>
+      <div class="sim-dim"><b>S / N 信息获取</b><span>关注具体事实，还是模式与可能性</span></div>
+      <div class="sim-dim"><b>T / F 决策依据</b><span>逻辑利弊，还是价值与感受</span></div>
+      <div class="sim-dim"><b>J / P 生活风格</b><span>计划确定，还是灵活开放</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:13px;background:#F0F7FD;border:1px solid #D8E8F5;border-radius:10px;padding:13px 15px;margin-bottom:16px;">
+      <div style="font-size:24px;font-weight:800;letter-spacing:3px;color:#2C6AA0;">ENTP</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;color:#3A4A5C;">辩论家</div>
+        <div style="font-size:11px;color:#8A98A9;margin-top:1px;">完成于 2026-09-15 18:32 · 点击查看完整报告</div>
+      </div>
+    </div>
+    <div class="sim-btn-row">
+      <button class="sim-btn sim-btn-primary" onclick="switchScreen(6)">查看完整报告</button>
+      <button class="sim-btn sim-btn-ghost" onclick="switchScreen(3)">重新测评</button>
+    </div>
+  </div>
+  <div class="sim-disclaimer">本工具为自我报告式性格测评，仅供个人参考。数据仅存于本机浏览器。</div>
+</div>`;
+}
+
+function renderQuizDual() {
+  return `<div class="sim-app">
+  <div class="sim-quiz-top">
+    <span class="sim-exit" onclick="switchScreen(0)">‹ 退出测评</span>
+    <span class="sim-step">第 <b>1</b> / 28 题</span>
+  </div>
+  <div class="sim-progress"><div class="sim-progress-fill" style="width:3.6%"></div></div>
+  <div class="sim-card">
+    <div class="sim-q">一场漫长的团队会议（或朋友聚会）结束后，你更接近哪种状态？</div>
+    <div class="sim-q-hint">两种场景各选一次 · ▲ 认同 A 陈述，▼ 认同 B 陈述，● 两可</div>
+    <div class="sim-scene" id="scene-w">
+      <div class="sim-scene-head"><i class="sim-dot work"></i>工作场景<span class="sim-scene-note">· 职场情境中的你</span></div>
+      <div class="sim-stmt"><b>A</b>意犹未尽，还想找人继续聊</div>
+      <div class="sim-scale">
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▲▲</span><span class="lbl">很认同 A</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▲</span><span class="lbl">较认同 A</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">●</span><span class="lbl">两可</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▼</span><span class="lbl">较认同 B</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▼▼</span><span class="lbl">很认同 B</span></div>
+      </div>
+      <div class="sim-stmt b"><b>B</b>电量耗尽，只想安静待一会儿</div>
+    </div>
+    <div class="sim-scene life" id="scene-l">
+      <div class="sim-scene-head"><i class="sim-dot life"></i>生活场景<span class="sim-scene-note">· 日常与私人情境中的你</span></div>
+      <div class="sim-stmt"><b>A</b>意犹未尽，还想找人继续聊</div>
+      <div class="sim-scale">
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▲▲</span><span class="lbl">很认同 A</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▲</span><span class="lbl">较认同 A</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">●</span><span class="lbl">两可</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▼</span><span class="lbl">较认同 B</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▼▼</span><span class="lbl">很认同 B</span></div>
+      </div>
+      <div class="sim-stmt b"><b>B</b>电量耗尽，只想安静待一会儿</div>
+    </div>
+    <div class="sim-nav">
+      <button class="sim-btn sim-btn-gray" disabled>‹ 上一题</button>
+      <button class="sim-btn sim-btn-primary" onclick="switchScreen(4)">下一题 ›</button>
+    </div>
+  </div>
+</div>`;
+}
+
+function renderQuizSingle() {
+  return `<div class="sim-app">
+  <div class="sim-quiz-top">
+    <span class="sim-exit" onclick="switchScreen(0)">‹ 退出测评</span>
+    <span class="sim-step">第 <b>3</b> / 28 题</span>
+  </div>
+  <div class="sim-progress"><div class="sim-progress-fill" style="width:10.7%"></div></div>
+  <div class="sim-card">
+    <div class="sim-q">周末连着两天都有社交安排，你会？</div>
+    <div class="sim-q-hint">▲ 认同 A 陈述 · ▼ 认同 B 陈述 · ● 两可</div>
+    <div class="sim-scene" id="scene-g">
+      <div class="sim-scene-head"><i class="sim-dot gen"></i>综合评估<span class="sim-scene-note">· 不限场景，凭整体直觉</span></div>
+      <div class="sim-stmt"><b>A</b>觉得充实，挺期待</div>
+      <div class="sim-scale">
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▲▲</span><span class="lbl">很认同 A</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▲</span><span class="lbl">较认同 A</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">●</span><span class="lbl">两可</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▼</span><span class="lbl">较认同 B</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▼▼</span><span class="lbl">很认同 B</span></div>
+      </div>
+      <div class="sim-stmt b"><b>B</b>想找理由推掉一两个</div>
+    </div>
+    <div class="sim-nav">
+      <button class="sim-btn sim-btn-gray" onclick="switchScreen(3)">‹ 上一题</button>
+      <button class="sim-btn sim-btn-primary" onclick="switchScreen(5)">下一题 ›</button>
+    </div>
+  </div>
+</div>`;
+}
+
+function renderQuizLast() {
+  return `<div class="sim-app">
+  <div class="sim-quiz-top">
+    <span class="sim-exit" onclick="switchScreen(0)">‹ 退出测评</span>
+    <span class="sim-step">第 <b>28</b> / 28 题</span>
+  </div>
+  <div class="sim-progress"><div class="sim-progress-fill" style="width:100%"></div></div>
+  <div class="sim-card">
+    <div class="sim-q">待办清单上没做完的事，会让你？</div>
+    <div class="sim-q-hint">▲ 认同 A 陈述 · ▼ 认同 B 陈述 · ● 两可</div>
+    <div class="sim-scene" id="scene-g2">
+      <div class="sim-scene-head"><i class="sim-dot gen"></i>综合评估<span class="sim-scene-note">· 不限场景，凭整体直觉</span></div>
+      <div class="sim-stmt"><b>A</b>一直挂在心上，想赶紧清掉</div>
+      <div class="sim-scale">
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▲▲</span><span class="lbl">很认同 A</span></div>
+        <div class="sim-scale-btn sel" onclick="pickScale(this)"><span class="sym">▲▲</span><span class="lbl">很认同 A</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">●</span><span class="lbl">两可</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▼</span><span class="lbl">较认同 B</span></div>
+        <div class="sim-scale-btn" onclick="pickScale(this)"><span class="sym">▼▼</span><span class="lbl">很认同 B</span></div>
+      </div>
+      <div class="sim-stmt b"><b>B</b>放着就放着，到点再说</div>
+    </div>
+    <div class="sim-nav">
+      <button class="sim-btn sim-btn-gray" onclick="switchScreen(4)">‹ 上一题</button>
+      <button class="sim-btn sim-btn-primary" onclick="switchScreen(6)">生成报告</button>
+    </div>
+  </div>
+</div>`;
+}
+
+function renderReportType() {
+  return `<div class="sim-app">
+  <div class="sim-brand"><h1>MBTI 性格测评</h1><span class="sub">工作 / 生活双场景对照版</span></div>
+  <div class="sim-card sim-type-hero">
+    <div class="sim-type-code">ENTP</div>
+    <div class="sim-type-name">辩论家</div>
+    <div class="sim-type-desc">点子层出不穷的创新催化者，热衷挑战常规与既有假设。</div>
+    <div class="sim-type-meta">完成于 2026-09-15 18:32 · 28 题 · 双场景模式 · 数据仅存本机</div>
+  </div>
+  <div class="sim-section-title">洞察摘要</div>
+  <div class="sim-card sim-insight">
+    <div class="sim-insight-kicker">本次测评发现</div>
+    <div class="sim-insight-title">务实的手，天马的心</div>
+    <div class="sim-insight-text">工作中的你盯着数据、细节和落地路径，但生活里的你常冒出"换一种活法会怎样"的念头。务实是你的职业策略，不是你的全部底色——别让 KPI 定义你的想象力。</div>
+    <div class="sim-insight-chips">
+      <span class="sim-chip-mild">E/I 轻度差异</span>
+      <span class="sim-chip-flip">S/N 场景切换</span>
+      <span class="sim-chip-mild">T/F 轻度差异</span>
+      <span class="sim-chip-flip">J/P 场景切换</span>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:14px;font-size:12px;color:#A0AEC0;">↓ 向下滚动查看完整报告</div>
+  <div class="sim-btn-row" style="margin-top:16px;">
+    <button class="sim-btn sim-btn-ghost" onclick="switchScreen(7)">下一节 · 洞察详情</button>
+    <button class="sim-btn sim-btn-gray" onclick="switchScreen(2)">返回首页</button>
+  </div>
+</div>`;
+}
+
+function renderReportInsight() {
+  return `<div class="sim-app">
+  <div class="sim-brand"><h1>MBTI 性格测评</h1><span class="sub">工作 / 生活双场景对照版</span></div>
+  <div class="sim-card sim-type-hero">
+    <div class="sim-type-code">ENTP</div>
+    <div class="sim-type-name">辩论家</div>
+    <div class="sim-type-desc">点子层出不穷的创新催化者，热衷挑战常规与既有假设。</div>
+  </div>
+  <div class="sim-section-title">洞察摘要</div>
+  <div class="sim-card sim-insight">
+    <div class="sim-insight-kicker">本次测评发现</div>
+    <div class="sim-insight-title">务实的手，天马的心</div>
+    <div class="sim-insight-text">工作中的你盯着数据、细节和落地路径，但生活里的你常冒出"换一种活法会怎样"的念头。务实是你的职业策略，不是你的全部底色——别让 KPI 定义你的想象力。</div>
+    <div class="sim-insight-chips">
+      <span class="sim-chip-mild">E/I 轻度差异</span>
+      <span class="sim-chip-flip">S/N 场景切换</span>
+      <span class="sim-chip-mild">T/F 轻度差异</span>
+      <span class="sim-chip-flip">J/P 场景切换</span>
+    </div>
+  </div>
+  <div class="sim-section-title">维度评分与倾向</div>
+  <div class="sim-card">
+    <div class="sim-dim-block">
+      <div class="sim-dim-head"><span class="sim-dim-name">外向 / 内向 <span style="color:#8A98A9;font-weight:600;font-size:11px;">E — I</span></span><span class="sim-dim-pct">E 43% · I 57%</span></div>
+      <div class="sim-bar-track"><div class="sim-bar-fill overall" data-w="43"></div><div class="sim-bar-mid"></div></div>
+      <div class="sim-dim-desc"><b>I</b> · 内向：能量指向内心世界，从独处思考中回血，先想后说，偏好深度交流。</div>
+    </div>
+    <div class="sim-dim-block">
+      <div class="sim-dim-head"><span class="sim-dim-name">实感 / 直觉 <span style="color:#8A98A9;font-weight:600;font-size:11px;">S — N</span></span><span class="sim-dim-pct">S 50% · N 50%</span></div>
+      <div class="sim-bar-track"><div class="sim-bar-fill overall" data-w="50"></div><div class="sim-bar-mid"></div></div>
+      <div class="sim-dim-desc"><b>均衡</b> · 两侧倾向接近均衡（临界型），该维度可能随情境与人生阶段波动。</div>
+    </div>
+  </div>
+  <div class="sim-btn-row" style="margin-top:14px;">
+    <button class="sim-btn sim-btn-ghost" onclick="switchScreen(8)">下一节 · 完整维度</button>
+    <button class="sim-btn sim-btn-gray" onclick="switchScreen(6)">‹ 返回顶部</button>
+  </div>
+</div>`;
+}
+
+function renderReportDim() {
+  return `<div class="sim-app">
+  <div class="sim-section-title">维度评分与倾向</div>
+  <div class="sim-card">
+    <div class="sim-dim-block">
+      <div class="sim-dim-head"><span class="sim-dim-name">外向 / 内向 <span style="color:#8A98A9;font-weight:600;font-size:11px;">E — I</span></span><span class="sim-dim-pct">E 43% · I 57%</span></div>
+      <div class="sim-bar-track"><div class="sim-bar-fill overall" data-w="43"></div><div class="sim-bar-mid"></div></div>
+      <div class="sim-dim-desc"><b>I</b> · 内向：能量指向内心世界，从独处思考中回血，先想后说，偏好深度交流。</div>
+    </div>
+    <div class="sim-dim-block">
+      <div class="sim-dim-head"><span class="sim-dim-name">实感 / 直觉 <span style="color:#8A98A9;font-weight:600;font-size:11px;">S — N</span></span><span class="sim-dim-pct">S 50% · N 50%</span></div>
+      <div class="sim-bar-track"><div class="sim-bar-fill overall" data-w="50"></div><div class="sim-bar-mid"></div></div>
+      <div class="sim-dim-desc"><b>均衡</b> · 两侧倾向接近均衡（临界型），可能随情境波动。</div>
+    </div>
+    <div class="sim-dim-block">
+      <div class="sim-dim-head"><span class="sim-dim-name">思考 / 情感 <span style="color:#8A98A9;font-weight:600;font-size:11px;">T — F</span></span><span class="sim-dim-pct">T 41% · F 59%</span></div>
+      <div class="sim-bar-track"><div class="sim-bar-fill overall" data-w="41"></div><div class="sim-bar-mid"></div></div>
+      <div class="sim-dim-desc"><b>F</b> · 情感：决策以价值与感受为依据，重视人的因素，追求和谐与认同。</div>
+    </div>
+    <div class="sim-dim-block">
+      <div class="sim-dim-head"><span class="sim-dim-name">判断 / 知觉 <span style="color:#8A98A9;font-weight:600;font-size:11px;">J — P</span></span><span class="sim-dim-pct">J 59% · P 41%</span></div>
+      <div class="sim-bar-track"><div class="sim-bar-fill overall" data-w="59"></div><div class="sim-bar-mid"></div></div>
+      <div class="sim-dim-desc"><b>J</b> · 判断：偏好计划与确定，喜欢提前安排、按节点推进、尽快收尾。</div>
+    </div>
+  </div>
+  <div class="sim-btn-row" style="margin-top:14px;">
+    <button class="sim-btn sim-btn-primary" onclick="switchScreen(9)">下一节 · 工作×生活对比</button>
+    <button class="sim-btn sim-btn-gray" onclick="switchScreen(7)">‹ 上一节</button>
+  </div>
+</div>`;
+}
+
+function renderReportCmp() {
+  return `<div class="sim-app">
+  <div class="sim-section-title">工作 × 生活 对比</div>
+  <div class="sim-legend">
+    <span><i style="background:#2C6AA0"></i>工作场景</span>
+    <span><i style="background:#DE8430"></i>生活场景</span>
+  </div>
+  <div class="sim-cmp">
+    <div class="sim-cmp-title">E 外向 · I 内向</div>
+    <div class="sim-cmp-row"><span class="sim-cmp-label"><i class="sim-dot work"></i>工作</span><div class="sim-cmp-bar"><div class="sim-bar-fill work" data-w="39"></div><div class="sim-bar-mid"></div></div><span class="sim-cmp-val">I 61%</span></div>
+    <div class="sim-cmp-row"><span class="sim-cmp-label"><i class="sim-dot life"></i>生活</span><div class="sim-cmp-bar"><div class="sim-bar-fill life" data-w="46"></div><div class="sim-bar-mid"></div></div><span class="sim-cmp-val">I 54%</span></div>
+    <div class="sim-cmp-foot"><span class="sim-chip-mild">轻度差异</span><span class="sim-cmp-diff">差异 7 个百分点</span></div>
+    <div class="sim-cmp-insight"><b>轻度场景差异。</b>工作与生活在该维度存在轻度差异，属于正常的情境波动。</div>
+  </div>
+  <div class="sim-cmp hl">
+    <div class="sim-cmp-title">S 实感 · N 直觉</div>
+    <div class="sim-cmp-row"><span class="sim-cmp-label"><i class="sim-dot work"></i>工作</span><div class="sim-cmp-bar"><div class="sim-bar-fill work" data-w="22"></div><div class="sim-bar-mid"></div></div><span class="sim-cmp-val">S 78%</span></div>
+    <div class="sim-cmp-row"><span class="sim-cmp-label"><i class="sim-dot life"></i>生活</span><div class="sim-cmp-bar"><div class="sim-bar-fill life" data-w="78"></div><div class="sim-bar-mid"></div></div><span class="sim-cmp-val">N 78%</span></div>
+    <div class="sim-cmp-foot"><span class="sim-chip-flip">场景切换</span><span class="sim-cmp-diff">差异 56 个百分点</span></div>
+    <div class="sim-cmp-insight"><b>务实的手，天马的心。</b>工作中的你盯着数据、细节和落地路径，但生活里的你常冒出"换一种活法会怎样"的念头。务实是你的职业策略，不是你的全部底色。</div>
+  </div>
+  <div class="sim-cmp">
+    <div class="sim-cmp-title">T 思考 · F 情感</div>
+    <div class="sim-cmp-row"><span class="sim-cmp-label"><i class="sim-dot work"></i>工作</span><div class="sim-cmp-bar"><div class="sim-bar-fill work" data-w="43"></div><div class="sim-bar-mid"></div></div><span class="sim-cmp-val">F 57%</span></div>
+    <div class="sim-cmp-row"><span class="sim-cmp-label"><i class="sim-dot life"></i>生活</span><div class="sim-cmp-bar"><div class="sim-bar-fill life" data-w="39"></div><div class="sim-bar-mid"></div></div><span class="sim-cmp-val">F 61%</span></div>
+    <div class="sim-cmp-foot"><span class="sim-chip-mild">轻度差异</span><span class="sim-cmp-diff">差异 4 个百分点</span></div>
+    <div class="sim-cmp-insight"><b>轻度场景差异。</b>工作与生活在该维度存在轻度差异，属于正常的情境波动。</div>
+  </div>
+  <div class="sim-cmp hl">
+    <div class="sim-cmp-title">J 判断 · P 知觉</div>
+    <div class="sim-cmp-row"><span class="sim-cmp-label"><i class="sim-dot work"></i>工作</span><div class="sim-cmp-bar"><div class="sim-bar-fill work" data-w="72"></div><div class="sim-bar-mid"></div></div><span class="sim-cmp-val">J 72%</span></div>
+    <div class="sim-cmp-row"><span class="sim-cmp-label"><i class="sim-dot life"></i>生活</span><div class="sim-cmp-bar"><div class="sim-bar-fill life" data-w="28"></div><div class="sim-bar-mid"></div></div><span class="sim-cmp-val">P 72%</span></div>
+    <div class="sim-cmp-foot"><span class="sim-chip-flip">场景切换</span><span class="sim-cmp-diff">差异 44 个百分点</span></div>
+    <div class="sim-cmp-insight"><b>上班守规矩，下班要自由。</b>日程表、节点、deadline 让你在工作中井井有条，但你内心其实渴望随性。自律是职业素养，松弛才是你的自然状态。</div>
+  </div>
+  <div class="sim-btn-row" style="margin-top:16px;">
+    <button class="sim-btn sim-btn-primary" onclick="switchScreen(3)">重新测评</button>
+    <button class="sim-btn sim-btn-ghost" onclick="switchScreen(2)">返回首页</button>
+  </div>
+  <div class="sim-disclaimer">工作 / 生活百分比由双场景题与综合题共同计算，反映作答时的自我认知倾向。本报告仅供个人参考，不构成心理诊断或职业决策依据。</div>
+</div>`;
+}
+
+/* ===== 标注数据 ===== */
+const ANNOTATIONS = {
+  'welcome-new': [
+    { top:'8px', left:'-20px', html:'<b>F1 入口逻辑</b><br>无数据状态：显示"开始测评"按钮' },
+    { top:'180px', right:'-20px', html:'<b>四维度卡片</b><br>2×2 网格布局，手机端自适应' },
+    { top:'330px', left:'-20px', html:'<b>注意事项</b><br>3 条引导，降低用户认知成本' },
+  ],
+  'welcome-mid': [
+    { top:'300px', left:'-20px', html:'<b>F5 续答提示</b><br>localStorage 中 status=in_progress 时显示<br>展示当前进度（第 X/28 题）' },
+    { top:'360px', right:'-20px', html:'<b>双按钮</b><br>继续测评（主）+ 重新开始（次）' },
+  ],
+  'welcome-done': [
+    { top:'300px', left:'-20px', html:'<b>F5 结果回看</b><br>localStorage 中 status=completed 时显示<br>展示类型代码 + 名称 + 时间' },
+    { top:'360px', right:'-20px', html:'<b>双按钮</b><br>查看完整报告（主）+ 重新测评（次）' },
+  ],
+  'quiz-dual': [
+    { top:'0', left:'-20px', html:'<b>F2 双场景题</b><br>同一题分工作+生活两个场景各选一次' },
+    { top:'90px', right:'-20px', html:'<b>进度条</b><br>实时反映当前进度（第 1/28 题 = 3.6%）' },
+    { top:'160px', left:'-20px', html:'<b>工作场景</b><br>蓝色标识，选完后自动引导到生活场景' },
+    { top:'340px', right:'-20px', html:'<b>生活场景</b><br>橙色标识，选完后两场景均完成→自动前进' },
+    { top:'470px', left:'-20px', html:'<b>5 档量表</b><br>▲▲(-2) ▲(-1) ●(0) ▼(+1) ▼▼(+2)' },
+    { top:'560px', right:'-20px', html:'<b>导航按钮</b><br>上一题（首题禁用）+ 下一题（未完成禁用）' },
+  ],
+  'quiz-single': [
+    { top:'0', right:'-20px', html:'<b>F2 单场景题</b><br>仅需综合评估一次，不区分场景' },
+    { top:'160px', left:'-20px', html:'<b>灰色标识</b><br>与双场景题视觉区分' },
+  ],
+  'quiz-last': [
+    { top:'0', left:'-20px', html:'<b>F2 最后一题</b><br>进度条 100%，按钮文字变为"生成报告"' },
+    { top:'130px', right:'-20px', html:'<b>已选中态示例</b><br>蓝色高亮 + 上移阴影<br>（此处展示选中效果）' },
+  ],
+  'report-type': [
+    { top:'20px', right:'-20px', html:'<b>F4-1 类型总览</b><br>大号蓝色类型代码 + 名称 + 描述' },
+    { top:'180px', left:'-20px', html:'<b>F4-2 洞察摘要</b><br>自动识别差异最大维度<br>生成针对性发现文案' },
+    { top:'320px', right:'-20px', html:'<b>四维度标签</b><br>flip(紫) / strong(蓝) / mild(灰) / stable(绿)' },
+  ],
+  'report-insight': [
+    { top:'200px', left:'-20px', html:'<b>F4-2 洞察摘要</b><br>首段文案 = 差异最大维度的场景切换洞察' },
+    { top:'380px', right:'-20px', html:'<b>F4-3 维度评分</b><br>百分比倾向条 + 主导侧释义<br>临界型标注"均衡"' },
+  ],
+  'report-dim': [
+    { top:'10px', left:'-20px', html:'<b>F4-3 维度评分</b><br>4 个维度逐行展示<br>灰底蓝色填充条 + 中线' },
+    { top:'170px', right:'-20px', html:'<b>均衡型示例</b><br>|score| < 0.5 → 标注"临界型"' },
+  ],
+  'report-cmp': [
+    { top:'0', left:'-20px', html:'<b>F4-4 工作×生活对比</b><br>4 组双轨条形图<br>蓝=工作 橙=生活' },
+    { top:'100px', right:'-20px', html:'<b>场景切换高亮</b><br>flip 级卡片紫色边框 + 专属洞察文案' },
+    { top:'300px', left:'-20px', html:'<b>差异标签</b><br>场景切换(紫) / 显著差异(蓝) / 轻度(灰) / 稳定(绿)<br>+ 差异百分点数值' },
+    { top:'480px', right:'-20px', html:'<b>场景洞察文案</b><br>针对性解读，非通用模板' },
+  ],
+};
+
+/* ===== 量表交互 ===== */
+function pickScale(el) {
+  const scene = el.closest('.sim-scene');
+  scene.querySelectorAll('.sim-scale-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+/* ===== 初始化 ===== */
+switchScreen(0);
+</script>
+</body>
+</html>
